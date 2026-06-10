@@ -71,6 +71,18 @@
       <span>Calendario Mensual</span>
     </button>
 
+    <button class="nav-item" id="nav-gantt" onclick="showView('gantt')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3"  y1="6"  x2="21" y2="6"/>
+        <line x1="3"  y1="12" x2="21" y2="12"/>
+        <line x1="3"  y1="18" x2="21" y2="18"/>
+        <rect x="3"  y="4"  width="7"  height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/>
+        <rect x="8"  y="10" width="9"  height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/>
+        <rect x="13" y="16" width="5"  height="4" rx="1" fill="currentColor" stroke="none" opacity=".7"/>
+      </svg>
+      <span>Gantt · Línea de tiempo</span>
+    </button>
+
     <div class="nav-section-label" style="margin-top:10px;">Acciones</div>
 
     <button class="nav-item" onclick="openAddEmployee()">
@@ -206,6 +218,41 @@
       </div>
       <div class="legend" id="monthly-legend"></div>
       <div class="monthly-calendar" id="monthly-calendar"></div>
+    </div>
+
+    <!-- GANTT -->
+    <div class="view" id="view-gantt">
+
+      <!-- Controls -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+        <div class="year-nav">
+          <button onclick="changeGanttYear(-1)">‹</button>
+          <h2 id="gantt-year-label">2026</h2>
+          <button onclick="changeGanttYear(1)">›</button>
+        </div>
+        <div class="legend" id="gantt-legend"></div>
+      </div>
+
+      <!-- Gantt card -->
+      <div class="gantt-card">
+
+        <!-- Month header row -->
+        <div class="gantt-head">
+          <div class="gantt-lhdr-spacer">Empleado</div>
+          <div class="gantt-mhdr-wrap">
+            <!-- "Hoy" indicator -->
+            <div class="gantt-today-hdr" id="gantt-today-hdr" style="display:none;">
+              <div class="gantt-today-hdr-lbl">Hoy</div>
+              <div class="gantt-today-hdr-line"></div>
+            </div>
+            <div id="gantt-month-header" class="gantt-month-header"></div>
+          </div>
+        </div>
+
+        <!-- Employee + festivos rows -->
+        <div id="gantt-rows"></div>
+
+      </div>
     </div>
 
   </main>
@@ -492,6 +539,7 @@
 <script src="calendar.js"></script>
 <script src="employees.js"></script>
 <script src="export-import.js"></script>
+<script src="gantt.js"></script>
 
 <!-- ── Init ── -->
 <script>

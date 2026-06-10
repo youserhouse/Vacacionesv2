@@ -220,9 +220,10 @@ function showView(v) {
   if (navEl) navEl.classList.add('active');
 
   const meta = {
-    dashboard: { title: 'Resumen',            sub: 'Panel general de vacaciones' },
-    annual:    { title: 'Calendario Anual',   sub: 'Vista completa del año' },
-    monthly:   { title: 'Calendario Mensual', sub: 'Vista mensual detallada' }
+    dashboard: { title: 'Resumen',              sub: 'Panel general de vacaciones' },
+    annual:    { title: 'Calendario Anual',     sub: 'Vista completa del año' },
+    monthly:   { title: 'Calendario Mensual',   sub: 'Vista mensual detallada' },
+    gantt:     { title: 'Línea de tiempo',      sub: 'Vista Gantt de vacaciones por empleado' }
   };
   const m = meta[v] || {};
   const pt = document.getElementById('page-title');
@@ -235,6 +236,7 @@ function showView(v) {
   if (v === 'dashboard') renderDashboard();
   if (v === 'annual')    renderAnnual();
   if (v === 'monthly')   renderMonthly();
+  if (v === 'gantt')     renderGantt();
 }
 
 // ── SIDEBAR MOBILE ────────────────────────────────────────────
