@@ -220,7 +220,7 @@
       <div class="monthly-calendar" id="monthly-calendar"></div>
     </div>
 
-    <!-- GANTT -->
+    <!-- GANTT / WALLCHART -->
     <div class="view" id="view-gantt">
 
       <!-- Controls -->
@@ -230,28 +230,21 @@
           <h2 id="gantt-year-label">2026</h2>
           <button onclick="changeGanttYear(1)">›</button>
         </div>
-        <div class="legend" id="gantt-legend"></div>
       </div>
 
-      <!-- Gantt card -->
+      <!-- Wallchart -->
       <div class="gantt-card">
-
-        <!-- Month header row -->
-        <div class="gantt-head">
-          <div class="gantt-lhdr-spacer">Empleado</div>
-          <div class="gantt-mhdr-wrap">
-            <!-- "Hoy" indicator -->
-            <div class="gantt-today-hdr" id="gantt-today-hdr" style="display:none;">
-              <div class="gantt-today-hdr-lbl">Hoy</div>
-              <div class="gantt-today-hdr-line"></div>
-            </div>
-            <div id="gantt-month-header" class="gantt-month-header"></div>
+        <!-- Header (sticky) -->
+        <div class="gantt-header">
+          <div class="gantt-header-label">Empleado</div>
+          <div class="gantt-header-days">
+            <div class="gantt-today-indicator" id="gantt-today-indicator"></div>
+            <div class="gantt-day-header" id="gantt-day-header"></div>
           </div>
         </div>
 
-        <!-- Employee + festivos rows -->
-        <div id="gantt-rows"></div>
-
+        <!-- Rows -->
+        <div class="gantt-rows" id="gantt-rows"></div>
       </div>
     </div>
 
