@@ -1,5 +1,5 @@
 // ── gantt.js ──────────────────────────────────────────────────
-// Vista Gantt: línea de tiempo de vacaciones por empleado
+// Vista Gantt: wallchart de línea de tiempo de vacaciones por empleado
 
 function _ganttDayOfYear(y, month0, day) {
   let n = 0;
@@ -35,43 +35,40 @@ function renderGantt() {
     todayPct = ((doy - 0.5) / total) * 100;
   }
 
-  // Month geometry
-  const months = [];
-  let acc = 0;
-  for (let m = 0; m < 12; m++) {
-    const d = daysInMonth(y, m);
-    months.push({ m, name: MONTHS[m], days: d, start: acc });
-    acc += d;
+  // ── Day-of-year header ──────────────────────────────────────
+  const dayHdr = document.getElementById('gantt-day-header');
+  if (dayHdr) {
+    let daysHtml = '';
+    for (let d = 1; d <= total; d++) {
+      // Add month divider every month start
+      let cls = '';
+      let findMonth = 0;
+      let accDays = 0;
+      for (let m = 0; m < 12; m++) {
+        const dm = daysInMonth(y, m);
+        if (accDays + dm >= d) {
+          if (accDays === d - 1) cls = 'gantt-dhdr-month-start';
+          break;
+        }
+        accDays += dm;
+      }
+      daysHtml += `<div class="gantt-dhdr-cell${cls}">${d}</div>`;
+    }
+    dayHdr.innerHTML = daysHtml;
   }
 
-  // ── Month header ──────────────────────────────────────────
-  const mHdrEl = document.getElementById('gantt-month-header');
-  if (mHdrEl) {
-    mHdrEl.innerHTML = months.map(mw => {
-      const w   = (mw.days / total * 100).toFixed(3);
-      const cur = isCur && today.getMonth() === mw.m;
-      return `<div class="gantt-mhdr-cell${cur ? ' gantt-mhdr-cur' : ''}" style="width:${w}%">${mw.name.slice(0, 3)}</div>`;
-    }).join('');
-  }
-
-  // ── "Hoy" label in header ─────────────────────────────────
-  const todayHdrEl = document.getElementById('gantt-today-hdr');
-  if (todayHdrEl) {
+  // ── Hoy indicator ───────────────────────────────────────────
+  const todayIndEl = document.getElementById('gantt-today-indicator');
+  if (todayIndEl) {
     if (todayPct !== null) {
-      todayHdrEl.style.display = 'block';
-      todayHdrEl.style.left    = todayPct.toFixed(3) + '%';
+      todayIndEl.style.display = 'block';
+      todayIndEl.style.left    = todayPct.toFixed(3) + '%';
     } else {
-      todayHdrEl.style.display = 'none';
+      todayIndEl.style.display = 'none';
     }
   }
 
-  // Month separator positions (reused in every row)
-  const sepsHtml = months.slice(1).map(mw => {
-    const p = (mw.start / total * 100).toFixed(3);
-    return `<div class="gantt-msep" style="left:${p}%"></div>`;
-  }).join('');
-
-  // ── Employee rows ─────────────────────────────────────────
+  // ── Employee rows ───────────────────────────────────────────
   const emps = state.employees;
   let rowsHtml = '';
 
@@ -81,17 +78,11 @@ function renderGantt() {
     emps.forEach(emp => {
       const tc   = getTextColorForBg(emp.color);
       const used = countVacDays(emp.id, y);
-      const pct  = Math.round((used / (emp.totalDays || 1)) * 100);
 
       // Vacation keys (sorted)
       const vacKeys = Object.entries(state.marks)
         .filter(([k, v]) => k.startsWith(String(y)) && v[emp.id] === 'V')
         .map(([k]) => k).sort();
-
-      // Other-type keys
-      const otherKeys = Object.entries(state.marks)
-        .filter(([k, v]) => k.startsWith(String(y)) && v[emp.id] === 'O')
-        .map(([k]) => k);
 
       // Group consecutive vac days → segments
       const segs = [];
@@ -101,80 +92,42 @@ function renderGantt() {
         const doy = _ganttDayOfYear(y, mm - 1, dd);
         if (!cur || doy > cur.endDoy + 1) {
           if (cur) segs.push(cur);
-          cur = { startKey: key, endKey: key, doy, endDoy: doy, count: 1 };
+          cur = { startDoy: doy, endDoy: doy, count: 1 };
         } else {
-          cur.endKey = key; cur.endDoy = doy; cur.count++;
+          cur.endDoy = doy; cur.count++;
         }
       });
       if (cur) segs.push(cur);
 
+      // Render vacation bars
       const vacBars = segs.map(s => {
-        const l   = ((s.doy - 1) / total * 100).toFixed(3);
-        const w   = Math.max(s.count / total * 100, 0.3).toFixed(3);
-        const lbl = s.count >= 3
-          ? `<span class="gantt-bar-lbl" style="color:${tc}">${s.count}d</span>` : '';
-        const dateRange = s.startKey === s.endKey
-          ? s.startKey : `${s.startKey} → ${s.endKey}`;
-        return `<div class="gantt-bar" style="left:${l}%;width:${w}%;background:${emp.color};"
-          title="${s.count} día${s.count > 1 ? 's' : ''} · ${dateRange}">${lbl}</div>`;
+        const l   = ((s.startDoy - 1) / total * 100).toFixed(2);
+        const w   = Math.max((s.count / total) * 100, 0.5).toFixed(2);
+        // Icon pattern
+        const icon = '✈️';
+        const bars = Array(Math.ceil(s.count / 2)).fill(icon).join('');
+        return `<div class="gantt-bar" style="left:${l}%;width:${w}%;background:${emp.color};" title="${s.count} día${s.count > 1 ? 's' : ''}">${bars}</div>`;
       }).join('');
 
-      const otherBars = otherKeys.map(key => {
-        const [, mm, dd] = key.split('-').map(Number);
-        const doy = _ganttDayOfYear(y, mm - 1, dd);
-        const l   = ((doy - 1) / total * 100).toFixed(3);
-        const w   = Math.max(1 / total * 100, 0.25).toFixed(3);
-        return `<div class="gantt-bar gantt-bar-other"
-          style="left:${l}%;width:${w}%;border-color:${emp.color}80;"
-          title="Otro · ${key}"></div>`;
-      }).join('');
-
+      // Hoy line
       const todayLine = todayPct !== null
-        ? `<div class="gantt-today-line" style="left:${todayPct.toFixed(3)}%"></div>` : '';
+        ? `<div class="gantt-today-line" style="left:${todayPct.toFixed(2)}%"></div>` : '';
 
       rowsHtml += `
       <div class="gantt-row">
         <div class="gantt-row-lbl">
-          <div class="gantt-emp-dot" style="background:${emp.color};color:${tc}">${initials(emp.name)}</div>
-          <div>
+          <div class="gantt-emp-avatar" style="background:${emp.color};color:${tc}">${initials(emp.name)}</div>
+          <div class="gantt-row-info">
             <div class="gantt-emp-name">${emp.name}</div>
-            <div class="gantt-emp-days">${used}&thinsp;/&thinsp;${emp.totalDays}d &middot; ${pct}%</div>
+            <div class="gantt-emp-role">${emp.role || '—'}</div>
           </div>
         </div>
-        <div class="gantt-row-bars">${sepsHtml}${vacBars}${otherBars}${todayLine}</div>
+        <div class="gantt-row-timeline">
+          <div class="gantt-row-bars">${vacBars}${todayLine}</div>
+        </div>
       </div>`;
     });
   }
 
-  // ── Festivos row ──────────────────────────────────────────
-  const festivoKeys = Object.keys(state.festivos)
-    .filter(k => k.startsWith(String(y)) && state.festivos[k]);
-
-  if (festivoKeys.length) {
-    const fMarks = festivoKeys.map(key => {
-      const [, mm, dd] = key.split('-').map(Number);
-      const doy = _ganttDayOfYear(y, mm - 1, dd);
-      const l   = ((doy - 1) / total * 100).toFixed(3);
-      const w   = Math.max(1 / total * 100, 0.25).toFixed(3);
-      return `<div class="gantt-festivo-mark" style="left:${l}%;width:${w}%;" title="Festivo · ${key}"></div>`;
-    }).join('');
-    const todayLine = todayPct !== null
-      ? `<div class="gantt-today-line" style="left:${todayPct.toFixed(3)}%"></div>` : '';
-    rowsHtml += `
-    <div class="gantt-row gantt-festivos-row">
-      <div class="gantt-row-lbl">
-        <div class="gantt-festivo-icon">🎌</div>
-        <div>
-          <div class="gantt-emp-name" style="color:var(--festivo)">Festivos</div>
-          <div class="gantt-emp-days">${festivoKeys.length} marcados</div>
-        </div>
-      </div>
-      <div class="gantt-row-bars">${sepsHtml}${fMarks}${todayLine}</div>
-    </div>`;
-  }
-
   document.getElementById('gantt-rows').innerHTML = rowsHtml;
-
-  // Legend
-  renderLegend('gantt-legend');
 }
