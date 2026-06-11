@@ -859,7 +859,7 @@ body.light .monthly-day.empty { background: rgba(0,0,0,.025); }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GANTT VIEW (Wallchart)
+   GANTT — Wallchart mensual
    ══════════════════════════════════════════════════════════════ */
 
 .gantt-card {
@@ -867,207 +867,224 @@ body.light .monthly-day.empty { background: rgba(0,0,0,.025); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  overflow-x: auto;
 }
 
-.gantt-header {
+/* ── Navegación de mes ───────────────────────────────────── */
+.gantt-month-nav {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.gantt-month-nav button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .18s;
+  flex-shrink: 0;
+}
+.gantt-month-nav button:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.gantt-month-nav h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem; font-weight: 800;
+  min-width: 150px; text-align: center;
+}
+
+/* ── Cabecera sticky (letras + números de día) ───────────── */
+.gantt-header-row {
+  display: flex;
+  align-items: stretch;
   border-bottom: 2px solid var(--border);
   background: var(--surface2);
   position: sticky;
   top: 64px;
   z-index: 20;
-  overflow-x: auto;
-  overflow-y: hidden;
+  min-width: max-content;
 }
 
-.gantt-header-label {
-  width: 200px;
-  min-width: 200px;
-  padding: 8px 12px;
-  border-right: 1px solid var(--border);
+.g-emp-hdr {
+  width: 210px;
+  min-width: 210px;
+  padding: 8px 14px;
   display: flex;
   align-items: center;
-  font-size: 0.67rem;
+  border-right: 2px solid var(--border);
+  font-size: 0.63rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: .6px;
+  letter-spacing: .7px;
 }
 
-.gantt-header-days {
+.g-days-hdr {
   display: flex;
-  position: relative;
-  align-items: stretch;
   flex: 1;
+  min-width: 0;
 }
 
-.gantt-day-header {
-  display: flex;
-  height: 28px;
-  position: relative;
-}
-
-.gantt-dhdr-cell {
-  width: 2.77%; /* 100% / 365 ≈ 0.274%, pero usamos ancho mínimo + scroll */
-  min-width: 3px;
-  max-width: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.5rem;
-  font-weight: 600;
-  color: var(--muted);
-  border-right: 1px solid transparent;
-  flex-shrink: 0;
-  user-select: none;
-  overflow: hidden;
-}
-.gantt-dhdr-month-start {
-  border-right-color: var(--border);
-  border-right-width: 2px;
-}
-
-/* "Hoy" indicator (vertical line) */
-.gantt-today-indicator {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: #22c55e;
-  transform: translateX(-50%);
-  z-index: 10;
-  pointer-events: none;
-  box-shadow: 0 0 6px rgba(34,197,94,.5);
-  display: none;
-}
-
-/* ── Body ────────────────────────────────────────────────── */
-.gantt-rows {
+/* Celda de día en la cabecera */
+.g-dhdr {
+  flex: 1;
+  min-width: 28px;
+  max-width: 52px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 2px;
+  border-right: 1px solid var(--border);
+  gap: 2px;
+  user-select: none;
+}
+.g-dhdr:last-child { border-right: none; }
+
+.g-dhdr-wknd { background: rgba(0,0,0,.05); }
+body.light .g-dhdr-wknd { background: rgba(0,0,0,.04); }
+
+.g-dhdr-today { background: var(--accent-dim); }
+.g-dhdr-today .g-dletter,
+.g-dhdr-today .g-dnum { color: var(--accent); }
+
+.g-dletter {
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  line-height: 1;
+}
+.g-dnum {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
 }
 
+/* ── Filas de empleado ───────────────────────────────────── */
 .gantt-row {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid var(--border);
-  min-height: 48px;
+  min-height: 52px;
+  min-width: max-content;
   transition: background .12s;
 }
 .gantt-row:last-child { border-bottom: none; }
-.gantt-row:hover { background: var(--surface2); }
+.gantt-row:hover { background: rgba(0,0,0,.02); }
+body.light .gantt-row:hover { background: rgba(0,0,0,.015); }
 
-.gantt-row-lbl {
-  width: 200px;
-  min-width: 200px;
+/* Columna izquierda: info del empleado */
+.g-emp-col {
+  width: 210px;
+  min-width: 210px;
   padding: 8px 12px;
   display: flex;
   align-items: center;
   gap: 9px;
-  border-right: 1px solid var(--border);
+  border-right: 2px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
-}
-
-.gantt-emp-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,.3);
-  flex-shrink: 0;
-}
-
-.gantt-row-info {
-  min-width: 0;
-  flex: 1;
-}
-
-.gantt-emp-name {
-  font-family: 'Syne', sans-serif;
-  font-size: 0.83rem;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--text);
-}
-
-.gantt-emp-role {
-  font-size: 0.65rem;
-  color: var(--muted);
-  margin-top: 1px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ── Timeline ────────────────────────────────────────────– */
-.gantt-row-timeline {
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-  min-height: 48px;
-}
-
-.gantt-row-bars {
-  position: absolute;
-  top: 0;
+  position: sticky;
   left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-/* ── Vacation bar ────────────────────────────────────────── */
-.gantt-bar {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 24px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 1;
-  min-width: 4px;
-  min-height: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: -.5px;
-  transition: box-shadow .15s, transform .15s;
-  overflow: visible;
-  white-space: nowrap;
-  padding: 0 2px;
-}
-.gantt-bar:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,.3);
-  transform: translateY(-50%) scaleY(1.2);
   z-index: 5;
 }
 
-/* ── Today line ──────────────────────────────────────────── */
-.gantt-today-line {
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  background: #22c55e;
-  border-radius: 2px;
-  z-index: 3;
-  pointer-events: none;
-  transform: translateX(-50%);
-  box-shadow: 0 0 6px rgba(34,197,94,.5);
+.g-emp-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 0.8rem; font-weight: 800;
+  flex-shrink: 0;
+  text-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.g-emp-info { flex: 1; min-width: 0; }
+.g-emp-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.82rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.g-emp-role {
+  font-size: 0.64rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.g-emp-badge {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; font-weight: 800;
+  flex-shrink: 0;
 }
 
-/* ── Empty state ─────────────────────────────────────────── */
+/* Columna derecha: celdas de días */
+.g-days-col {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+}
+
+/* ── Celda de día ────────────────────────────────────────── */
+.g-cell {
+  flex: 1;
+  min-width: 28px;
+  max-width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .12s;
+  position: relative;
+}
+.g-cell:last-child { border-right: none; }
+.g-cell:hover { background: var(--surface2) !important; }
+
+.g-cell-num {
+  font-size: 0.64rem;
+  color: var(--muted);
+  font-weight: 500;
+  user-select: none;
+}
+
+/* Fin de semana */
+.g-cell-wknd { background: rgba(0,0,0,.04); }
+body.light .g-cell-wknd { background: rgba(0,0,0,.03); }
+
+/* Festivo */
+.g-cell-fest { background: rgba(248,113,113,.08); }
+
+/* Hoy */
+.g-cell-today::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 2px solid #22c55e;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* Día de vacaciones */
+.g-cell-vac {
+  border-right-color: rgba(255,255,255,.15);
+}
+.g-vac-icon {
+  font-size: 0.78rem;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.25));
+}
+
+/* Otro tipo de marca */
+.g-cell-other { }
+
+/* ── Estado vacío ────────────────────────────────────────── */
 .gantt-empty {
   padding: 60px 24px;
   text-align: center;

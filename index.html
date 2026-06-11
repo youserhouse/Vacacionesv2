@@ -222,29 +222,24 @@
 
     <!-- GANTT / WALLCHART -->
     <div class="view" id="view-gantt">
-
-      <!-- Controls -->
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-        <div class="year-nav">
-          <button onclick="changeGanttYear(-1)">‹</button>
-          <h2 id="gantt-year-label">2026</h2>
-          <button onclick="changeGanttYear(1)">›</button>
-        </div>
-      </div>
-
-      <!-- Wallchart -->
       <div class="gantt-card">
-        <!-- Header (sticky) -->
-        <div class="gantt-header">
-          <div class="gantt-header-label">Empleado</div>
-          <div class="gantt-header-days">
-            <div class="gantt-today-indicator" id="gantt-today-indicator"></div>
-            <div class="gantt-day-header" id="gantt-day-header"></div>
-          </div>
+
+        <!-- Navegación de mes -->
+        <div class="gantt-month-nav">
+          <button onclick="changeGanttMonth(-1)">‹</button>
+          <h3 id="gantt-month-title">Junio 2026</h3>
+          <button onclick="changeGanttMonth(1)">›</button>
         </div>
 
-        <!-- Rows -->
-        <div class="gantt-rows" id="gantt-rows"></div>
+        <!-- Cabecera sticky: letra + número de día -->
+        <div class="gantt-header-row">
+          <div class="g-emp-hdr">Empleado</div>
+          <div class="g-days-hdr" id="gantt-days-hdr"></div>
+        </div>
+
+        <!-- Filas de empleados -->
+        <div id="gantt-rows"></div>
+
       </div>
     </div>
 

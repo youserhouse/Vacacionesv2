@@ -1,130 +1,101 @@
 // ── gantt.js ──────────────────────────────────────────────────
-// Vista Gantt: wallchart de línea de tiempo de vacaciones por empleado
+// Vista Gantt — Wallchart mensual: empleados × días del mes
 
-function _ganttDayOfYear(y, month0, day) {
-  let n = 0;
-  for (let m = 0; m < month0; m++) n += daysInMonth(y, m);
-  return n + day; // 1-based
-}
+let _gMonth = new Date().getMonth(); // 0-based, inicializa al mes actual
+let _gYear  = new Date().getFullYear();
 
-function _ganttTotalDays(y) {
-  let t = 0;
-  for (let m = 0; m < 12; m++) t += daysInMonth(y, m);
-  return t;
-}
+// Abreviaturas de día (índice DOM: 0=domingo)
+const DAY_LETTER = ['D','L','M','X','J','V','S'];
 
-function changeGanttYear(delta) {
-  state.currentYear += delta;
-  saveState();
+function changeGanttMonth(delta) {
+  _gMonth += delta;
+  if (_gMonth < 0)  { _gMonth = 11; _gYear--; }
+  if (_gMonth > 11) { _gMonth = 0;  _gYear++; }
   renderGantt();
 }
 
 function renderGantt() {
-  const y      = state.currentYear;
-  const total  = _ganttTotalDays(y);
-  const today  = new Date();
-  const isCur  = today.getFullYear() === y;
+  const y    = _gYear;
+  const m    = _gMonth;
+  const days = daysInMonth(y, m);
+  const today = new Date();
+  const isThisMo = today.getFullYear() === y && today.getMonth() === m;
 
-  const ylEl = document.getElementById('gantt-year-label');
-  if (ylEl) ylEl.textContent = y;
+  // Título mes + año
+  const titleEl = document.getElementById('gantt-month-title');
+  if (titleEl) titleEl.textContent = `${MONTHS[m]} ${y}`;
 
-  // Today position (%)
-  let todayPct = null;
-  if (isCur) {
-    const doy = _ganttDayOfYear(y, today.getMonth(), today.getDate());
-    todayPct = ((doy - 0.5) / total) * 100;
+  // ── Cabecera de días ─────────────────────────────────────
+  let hdrHtml = '';
+  for (let d = 1; d <= days; d++) {
+    const dow    = new Date(y, m, d).getDay();
+    const letter = DAY_LETTER[dow];
+    const isWknd  = dow === 0 || dow === 6;
+    const isToday = isThisMo && d === today.getDate();
+    let cls = 'g-dhdr';
+    if (isWknd)  cls += ' g-dhdr-wknd';
+    if (isToday) cls += ' g-dhdr-today';
+    hdrHtml += `<div class="${cls}">
+      <span class="g-dletter">${letter}</span>
+      <span class="g-dnum">${d}</span>
+    </div>`;
   }
+  const hdrEl = document.getElementById('gantt-days-hdr');
+  if (hdrEl) hdrEl.innerHTML = hdrHtml;
 
-  // ── Day-of-year header ──────────────────────────────────────
-  const dayHdr = document.getElementById('gantt-day-header');
-  if (dayHdr) {
-    let daysHtml = '';
-    for (let d = 1; d <= total; d++) {
-      // Add month divider every month start
-      let cls = '';
-      let findMonth = 0;
-      let accDays = 0;
-      for (let m = 0; m < 12; m++) {
-        const dm = daysInMonth(y, m);
-        if (accDays + dm >= d) {
-          if (accDays === d - 1) cls = 'gantt-dhdr-month-start';
-          break;
-        }
-        accDays += dm;
-      }
-      daysHtml += `<div class="gantt-dhdr-cell${cls}">${d}</div>`;
-    }
-    dayHdr.innerHTML = daysHtml;
-  }
-
-  // ── Hoy indicator ───────────────────────────────────────────
-  const todayIndEl = document.getElementById('gantt-today-indicator');
-  if (todayIndEl) {
-    if (todayPct !== null) {
-      todayIndEl.style.display = 'block';
-      todayIndEl.style.left    = todayPct.toFixed(3) + '%';
-    } else {
-      todayIndEl.style.display = 'none';
-    }
-  }
-
-  // ── Employee rows ───────────────────────────────────────────
+  // ── Filas de empleados ───────────────────────────────────
   const emps = state.employees;
   let rowsHtml = '';
 
   if (!emps.length) {
-    rowsHtml = `<div class="gantt-empty">No hay empleados registrados. Añade uno desde el menú.</div>`;
+    rowsHtml = `<div class="gantt-empty">No hay empleados. Añade uno desde el menú.</div>`;
   } else {
     emps.forEach(emp => {
       const tc   = getTextColorForBg(emp.color);
       const used = countVacDays(emp.id, y);
+      const left = emp.totalDays - used;
 
-      // Vacation keys (sorted)
-      const vacKeys = Object.entries(state.marks)
-        .filter(([k, v]) => k.startsWith(String(y)) && v[emp.id] === 'V')
-        .map(([k]) => k).sort();
+      let cellsHtml = '';
+      for (let d = 1; d <= days; d++) {
+        const key     = dateKey(y, m, d);
+        const dow     = new Date(y, m, d).getDay();
+        const isWknd  = dow === 0 || dow === 6;
+        const isFest  = isFestivo(key);
+        const marks   = getDayMarks(key);
+        const vtype   = marks[emp.id];          // 'V', 'O' o undefined
+        const isToday = isThisMo && d === today.getDate();
 
-      // Group consecutive vac days → segments
-      const segs = [];
-      let cur = null;
-      vacKeys.forEach(key => {
-        const [, mm, dd] = key.split('-').map(Number);
-        const doy = _ganttDayOfYear(y, mm - 1, dd);
-        if (!cur || doy > cur.endDoy + 1) {
-          if (cur) segs.push(cur);
-          cur = { startDoy: doy, endDoy: doy, count: 1 };
+        let cls = 'g-cell';
+        if (isWknd)  cls += ' g-cell-wknd';
+        if (isFest)  cls += ' g-cell-fest';
+        if (isToday) cls += ' g-cell-today';
+
+        if (vtype === 'V') {
+          cls += ' g-cell-vac';
+          cellsHtml += `<div class="${cls}" style="background:${emp.color};" onclick="openDayModal('${key}')" title="Vacaciones · ${key}">
+            <span class="g-vac-icon" style="color:${tc}">✈</span>
+          </div>`;
+        } else if (vtype === 'O') {
+          cls += ' g-cell-other';
+          cellsHtml += `<div class="${cls}" style="background:${emp.color}22;border-top:3px solid ${emp.color};" onclick="openDayModal('${key}')" title="Otro · ${key}"></div>`;
         } else {
-          cur.endDoy = doy; cur.count++;
+          cellsHtml += `<div class="${cls}" onclick="openDayModal('${key}')">
+            <span class="g-cell-num">${d}</span>
+          </div>`;
         }
-      });
-      if (cur) segs.push(cur);
-
-      // Render vacation bars
-      const vacBars = segs.map(s => {
-        const l   = ((s.startDoy - 1) / total * 100).toFixed(2);
-        const w   = Math.max((s.count / total) * 100, 0.5).toFixed(2);
-        // Icon pattern
-        const icon = '✈️';
-        const bars = Array(Math.ceil(s.count / 2)).fill(icon).join('');
-        return `<div class="gantt-bar" style="left:${l}%;width:${w}%;background:${emp.color};" title="${s.count} día${s.count > 1 ? 's' : ''}">${bars}</div>`;
-      }).join('');
-
-      // Hoy line
-      const todayLine = todayPct !== null
-        ? `<div class="gantt-today-line" style="left:${todayPct.toFixed(2)}%"></div>` : '';
+      }
 
       rowsHtml += `
       <div class="gantt-row">
-        <div class="gantt-row-lbl">
-          <div class="gantt-emp-avatar" style="background:${emp.color};color:${tc}">${initials(emp.name)}</div>
-          <div class="gantt-row-info">
-            <div class="gantt-emp-name">${emp.name}</div>
-            <div class="gantt-emp-role">${emp.role || '—'}</div>
+        <div class="g-emp-col">
+          <div class="g-emp-avatar" style="background:${emp.color};color:${tc}">${initials(emp.name)}</div>
+          <div class="g-emp-info">
+            <div class="g-emp-name">${emp.name}</div>
+            <div class="g-emp-role">${emp.role || '—'}</div>
           </div>
+          <div class="g-emp-badge" style="background:${emp.color};color:${tc}" title="${left} días restantes">${left}</div>
         </div>
-        <div class="gantt-row-timeline">
-          <div class="gantt-row-bars">${vacBars}${todayLine}</div>
-        </div>
+        <div class="g-days-col">${cellsHtml}</div>
       </div>`;
     });
   }
